@@ -51,7 +51,7 @@ public class Algoritmo extends Constantes{
 
                 //cada neuronio da camada de saida irá ter o somatorio da saída * peso de cada neuronio da camada de intermediaria
                 for(int j = 0;j < N_SAIDA;j++){
-                    camadaSaida.neuronios[j].entrada = 0.0;
+                    camadaSaida.neuronios[j].entrada = 0;
                 }
 
                 for (int j = 0; j < N_INTERMEDIARIA; j++) {
