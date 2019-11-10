@@ -2,7 +2,7 @@ package principal;
 
 public class Main {
     public static void main(String[] args) {
-        Algoritmo a = new Algoritmo();
+        Algoritmo aaa = new Algoritmo();
 
 //        proximos passos:
 //        - verificar se ta tudo certo em relação à estrutura da RN

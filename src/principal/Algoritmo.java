@@ -22,7 +22,7 @@ public class Algoritmo extends Constantes{
         byte[] entrada;
         int it = 0;
 
-        while(it < 20) {
+        while(it < 1000) {
             for (int i = 0; i < N_INSTANCIAS; i++) {
                 entrada = (byte[]) dados.entrada.get(i);
                 //alimenta cada neuronio da camada de entrada e seta o valor de saida
