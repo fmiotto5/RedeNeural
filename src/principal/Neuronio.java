@@ -16,9 +16,13 @@ public class Neuronio {
         Random r = new Random();
 
         if(camada == Constantes.CAMADA_ENTRADA){
-            conexoesDeSaida = new double[(Constantes.N_ENTRADA + Constantes.N_SAIDA)/2];
+            conexoesDeSaida = new double[Constantes.N_INTERMEDIARIA];
             for(int i = 0; i < conexoesDeSaida.length; i++){
-                conexoesDeSaida[i] = r.nextDouble();
+                double randomValue = 0.0 + (1.0 - 0.0) * r.nextDouble();
+                conexoesDeSaida[i] = randomValue;
+
+//                conexoesDeSaida[i] = r.nextDouble();
+
             }
         }else if(camada == Constantes.CAMADA_INTERMEDIARIA){
 //            conexoesDeEntrada = new double[Constantes.N_ENTRADA];
@@ -28,7 +32,10 @@ public class Neuronio {
 //            }
 
             for(int i = 0; i < conexoesDeSaida.length; i++){
-                conexoesDeSaida[i] = r.nextDouble();
+                double randomValue = 0.0 + (1.0 - 0.0) * r.nextDouble();
+                conexoesDeSaida[i] = randomValue;
+
+//                conexoesDeSaida[i] = r.nextDouble();
             }
         }else{
 //            conexoesDeEntrada = new double[Constantes.N_ENTRADA];
@@ -45,7 +52,7 @@ public class Neuronio {
 //            }
 //        }else if(camada == Constantes.CAMADA_INTERMEDIARIA){
 //            for(int i = 0;i<nEntradas;i++){
-//                conexaoDeEntradas[i].neuronio = new Neuronio();
+//                conexaoDeEntradas[i].neuronio = new Neuronio();viram
 //            }
 //
 //            for(int i = 0;i<nSaidas;i++){

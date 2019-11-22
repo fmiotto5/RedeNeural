@@ -2,12 +2,11 @@ package principal;
 
 public class Main {
     public static void main(String[] args) {
-        Algoritmo aaa = new Algoritmo();
+        Algoritmo a = new Algoritmo();
 
-//        proximos passos:
-//        - verificar se ta tudo certo em relação à estrutura da RN
-//        - criar um metodo que aplica cada entrada a cada neuronio da ccamada de entrada
-
-        //tenho que aplicar saida * peso para cada neuronio na camada de entrada, isto é, quando um neuronio da camada de entrada propaga para a camada intermediaria?
+        //por que a primeira instância não converge para 1000000000?
+        //printar o erro da camada intermediaria pra ver se tem algum padrao de erro na it 2 para a 3
+        //
+        //depurar
     }
 }
