@@ -1,7 +1,5 @@
 package principal;
 
-import javax.naming.directory.AttributeInUseException;
-import javax.xml.crypto.dom.DOMCryptoContext;
 import java.util.ArrayList;
 
 public class Algoritmo extends Constantes{
@@ -18,13 +16,7 @@ public class Algoritmo extends Constantes{
     ArrayList<Double> alTPR = new ArrayList<>();
     ArrayList<Double> alFPR = new ArrayList<>();
 
-    //saida, tem que obrigatoriamente estar acima de 0.5?
-    // se entrar um dado bem fora dos padroes, tem que sair algum neuronio > 0.5?
-
-    //como eu coloco a saida esperada de um caractere fora dos padroes?
-
     public Algoritmo() {
-//        dadosTreino = new Dados("entrada");
         dadosTreino = new Dados("dataset_treino");
         dadosTeste = new Dados("dataset_teste");
 
@@ -46,21 +38,22 @@ public class Algoritmo extends Constantes{
         double[] entrada;
         int it = 0;
 
-        while(it < 1000) {
+        while(it < 700) {
             for(int i = 0;i < N_INSTANCIAS;i++){
                 entrada = dadosTreino.entrada.get(i);
 
+                //neurônios da camada de entrada propagam o mesmo valor de suas entradas
                 for(int j = 0;j < N_ENTRADA;j++){
                     camadaEntrada.neuronios[j].entrada = entrada[j];
                     camadaEntrada.neuronios[j].saida = entrada[j];
                 }
 
-                //zera entrada dos neuronios da intermediraria
+                //zera entrada dos neuronios da camada intermediraria
                 for(int j = 0;j < N_INTERMEDIARIA;j++){
                     camadaIntermediaria.neuronios[j].entrada = 0.0;
                 }
 
-                //passa para camada intermediaria
+                //alimenta a entrada dos neurônios da camada intermediaria
                 for(int j = 0;j < N_ENTRADA;j++){
                     for(int k = 0;k < N_INTERMEDIARIA;k++){
                         camadaIntermediaria.neuronios[k].entrada += camadaEntrada.neuronios[j].saida * camadaEntrada.neuronios[j].conexoesDeSaida[k];
@@ -68,16 +61,17 @@ public class Algoritmo extends Constantes{
                 }
 
                 //saida = 1 / (1 + Exp(-somatorio))
-                //signoidal
+                //isto é, aplica função signoidal
                 for(int j = 0;j < N_INTERMEDIARIA;j++){
                     camadaIntermediaria.neuronios[j].saida = 1.0 / (1.0 + Math.exp(-camadaIntermediaria.neuronios[j].entrada));
                 }
 
-                //zera a entrada da saida
+                //zera a entrada dos neurônios da camada de saída
                 for(int j = 0;j < N_SAIDA;j++){
                     camadaSaida.neuronios[j].entrada = 0.0;
                 }
 
+                //alimenta entrada dos neurônios da camada de saída
                 for(int j = 0;j < N_INTERMEDIARIA;j++){
                     for(int k = 0;k < N_SAIDA;k++){
                         camadaSaida.neuronios[k].entrada += camadaIntermediaria.neuronios[j].saida * camadaIntermediaria.neuronios[j].conexoesDeSaida[k];
@@ -85,36 +79,16 @@ public class Algoritmo extends Constantes{
                 }
 
                 //saida = 1 / (1 + Exp(-somatorio))
-                //sigmoidal
+                //isto é, aplica função sigmoidal
                 for(int j = 0;j < N_SAIDA;j++){
                     camadaSaida.neuronios[j].saida = 1.0 / (1.0 + Math.exp(-camadaSaida.neuronios[j].entrada));
                 }
 
+                //método que calcula os erros dos neurônios
                 calculaErro(i);
 
+                //método que ajusta os pesos das conexões
                 ajustaPesos();
-
-//                double[] s = dadosTreino.saidaEsperada.get(i);
-//                if (i == 0)
-//                    System.out.println("Iteração: " + it);
-//
-//                for (int j = 0; j < N_SAIDA; j++) {
-//                    if(i == 0) {
-//                        System.out.println("Saída (sigmoidal) do neuronio " + j + ": " + camadaSaida.neuronios[j].saida + " | saida esperada: " + s[j] + " | entrada (somatório): " + camadaSaida.neuronios[j].entrada + " | erro: " + camadaSaida.neuronios[j].erro);
-//                    }
-//                }
-
-//                for (int j = 0; j < N_INTERMEDIARIA; j++) {
-//                    if(i == 0) {
-//                        System.out.println("Saída do neuronio " + j + ": " + camadaIntermediaria.neuronios[j].saida + " | entrada: " + camadaIntermediaria.neuronios[j].entrada + " | erro: " + camadaIntermediaria.neuronios[j].erro);
-//                    }
-//                }
-
-
-
-//                if (i == 0)
-//                    System.out.println("\n");
-
             }
             it++;
         }
@@ -124,48 +98,32 @@ public class Algoritmo extends Constantes{
         double fatorErro = 0.0;
         double[] saidaEsperada = dadosTreino.saidaEsperada.get(instancia);
 
-
-        for(int i = 0;i < N_SAIDA;i++){
+        //calcula o erro de cada neuronio da camada de saida
+        for (int i = 0; i < N_SAIDA; i++) {
             //FatorErro de neuronio na camada de saída=SaídaEsperada–SaídaAtualNeuronio
             fatorErro = saidaEsperada[i] - camadaSaida.neuronios[i].saida;
+
             //Neuronio.Erro = Neuronio.Saida * (1 - Neuronio.Saida) * FatorErro
             camadaSaida.neuronios[i].erro = camadaSaida.neuronios[i].saida * (1.0 - camadaSaida.neuronios[i].saida) * fatorErro;
         }
 
+        //calcula o erro de cada neuronio da camada intermediaria
         fatorErro = 0.0;
-        for(int i = 0;i < N_INTERMEDIARIA;i++){
-            for(int j = 0;j < N_SAIDA;j++){
+        for (int i = 0; i < N_INTERMEDIARIA; i++) {
+            for (int j = 0; j < N_SAIDA; j++) {
                 fatorErro += camadaSaida.neuronios[j].erro * camadaIntermediaria.neuronios[i].conexoesDeSaida[j];
             }
+
             //X1.Erro = X1.Saida * (1 - X1.Saida) * FatorErro de X1
             camadaIntermediaria.neuronios[i].erro = camadaIntermediaria.neuronios[i].saida * (1.0 - camadaIntermediaria.neuronios[i].saida) * fatorErro;
             fatorErro = 0;
         }
-
-        //calcula o erro de cada neuronio da camada de saida
-//        for (int i = 0; i < N_SAIDA; i++) {
-//            fatorErro = (double)saidaEsperada[i] - camadaSaida.neuronios[i].saida;
-//            camadaSaida.neuronios[i].erro = camadaSaida.neuronios[i].saida * (1.0 - camadaSaida.neuronios[i].saida) * fatorErro;
-//        }
-
-        //calcula o erro de cada neuronio da camada intermediaria
-//        fatorErro = 0;
-//        for (int i = 0; i < N_INTERMEDIARIA; i++) {
-//            for (int j = 0; j < N_SAIDA; j++) {
-//                fatorErro += camadaSaida.neuronios[j].erro * camadaIntermediaria.neuronios[i].conexoesDeSaida[j];
-//            }
-//            camadaIntermediaria.neuronios[i].erro = camadaIntermediaria.neuronios[i].saida * (1.0 - camadaIntermediaria.neuronios[i].saida) * fatorErro;
-//            fatorErro = 0;
-//        }
     }
 
     private void ajustaPesos(){
-        //Novo_peso=Peso_anterior*momentum+Taxa_aprendizagem*Saída_neurônio_anterior*Erro_neur_posterior
 
-//        For cada Neuronio de Entrada N conectado a EsteNeuronio
-//        Novo_Peso de N = Peso_anterior de N + taxa_de_aprendizagem * N.Saida
-//                * EsteNeuronio.Erro
-//        Next
+        //Ajuste dos pesos das conexoes
+        //Novo_peso = Peso_anterior * momentum + Taxa_aprendizagem * Saída_neurônio_anterior * Erro_neur_posterior
         for(int i  = 0;i < N_ENTRADA;i++){
             for(int j = 0;j < N_INTERMEDIARIA;j++){
                 camadaEntrada.neuronios[i].conexoesDeSaida[j] = camadaEntrada.neuronios[i].conexoesDeSaida[j] * MOMENTUM +
@@ -173,38 +131,21 @@ public class Algoritmo extends Constantes{
             }
         }
 
+        //Ajuste dos pesos dos neurônios da camada intermediária
         for(int i = 0;i < N_INTERMEDIARIA;i++){
             for(int j = 0;j < N_SAIDA;j++){
                 camadaIntermediaria.neuronios[i].conexoesDeSaida[j] = camadaIntermediaria.neuronios[i].conexoesDeSaida[j] * MOMENTUM +
                         TAXA_APRENDIZAGEM * camadaIntermediaria.neuronios[i].saida * camadaSaida.neuronios[j].erro;
             }
         }
-
-        //ajuste dos pesos das conexoes
-//        for (int i = 0; i < N_SAIDA; i++) {
-//            for (int j = 0; j < N_INTERMEDIARIA; j++) {
-//                //Novo_Peso de N = Peso_anterior de N * momentum + taxa_de_aprendizagem * N.Saida * EsteNeuronio.Erro
-//                //Novo_Peso de N é o peso da conexão ou do neuronio?
-//                camadaIntermediaria.neuronios[j].conexoesDeSaida[i] = camadaIntermediaria.neuronios[j].conexoesDeSaida[i] * MOMENTUM +
-//                        TAXA_APRENDIZAGEM * camadaIntermediaria.neuronios[j].saida * camadaSaida.neuronios[i].erro;
-//            }
-//        }
-//
-//        //ajustes dos pesos dos neuronios da camada intermediaria
-//        for (int i = 0; i < N_INTERMEDIARIA; i++) {
-//            for (int j = 0; j < N_ENTRADA; j++) {
-//                //Novo_Peso de N = Peso_anterior de N * momentum + taxa_de_aprendizagem * N.Saida * EsteNeuronio.Erro
-//                camadaEntrada.neuronios[j].conexoesDeSaida[i] = camadaEntrada.neuronios[j].conexoesDeSaida[i] * MOMENTUM +
-//                        TAXA_APRENDIZAGEM * camadaEntrada.neuronios[j].saida * camadaIntermediaria.neuronios[i].erro;
-//            }
-//        }
     }
 
     private void testaRede(){
         double[] entrada;
-        for (int i = 0; i < 94; i++) { //testa os 94 dos 100 dados do dataset de treino (6 deles são caraceteres aleatórios)
+        for (int i = 0; i < 94; i++) { //testa os 94 dos 100 dados do dataset de treino (6 deles são caraceteres aleatórios e não farão parte das estatísticas)
             entrada = dadosTeste.entrada.get(i);
 
+            //neurônios da camada de entrada propagam o mesmo valor de suas entradas
             for (int j = 0; j < N_ENTRADA; j++) {
                 camadaEntrada.neuronios[j].entrada = entrada[j];
                 camadaEntrada.neuronios[j].saida = entrada[j];
@@ -215,7 +156,7 @@ public class Algoritmo extends Constantes{
                 camadaIntermediaria.neuronios[j].entrada = 0.0;
             }
 
-            //passa para camada intermediaria
+            //alimenta a entrada dos neurônios da camada intermediaria
             for (int j = 0; j < N_ENTRADA; j++) {
                 for (int k = 0; k < N_INTERMEDIARIA; k++) {
                     camadaIntermediaria.neuronios[k].entrada += camadaEntrada.neuronios[j].saida * camadaEntrada.neuronios[j].conexoesDeSaida[k];
@@ -223,7 +164,7 @@ public class Algoritmo extends Constantes{
             }
 
             //saida = 1 / (1 + Exp(-somatorio))
-            //signoidal
+            //isto é, aplica a função sigmoidal
             for (int j = 0; j < N_INTERMEDIARIA; j++) {
                 camadaIntermediaria.neuronios[j].saida = 1.0 / (1.0 + Math.exp(-camadaIntermediaria.neuronios[j].entrada));
             }
@@ -233,6 +174,7 @@ public class Algoritmo extends Constantes{
                 camadaSaida.neuronios[j].entrada = 0.0;
             }
 
+            //alimenta entrada dos neurônios da camada de saída
             for (int j = 0; j < N_INTERMEDIARIA; j++) {
                 for (int k = 0; k < N_SAIDA; k++) {
                     camadaSaida.neuronios[k].entrada += camadaIntermediaria.neuronios[j].saida * camadaIntermediaria.neuronios[j].conexoesDeSaida[k];
@@ -240,7 +182,7 @@ public class Algoritmo extends Constantes{
             }
 
             //saida = 1 / (1 + Exp(-somatorio))
-            //signoidal
+            //isto é, aplica a função sigmoidal
             for (int j = 0; j < N_SAIDA; j++) {
                 camadaSaida.neuronios[j].saida = 1.0 / (1.0 + Math.exp(-camadaSaida.neuronios[j].entrada));
             }
@@ -252,17 +194,18 @@ public class Algoritmo extends Constantes{
                 if(saidaEsperada[j] == 1.0)
                     avaliaResultado(j);
             }
-
-//            System.out.println("it: " + i);
-//            for (int j = 0; j < 36; j++) {
-//                System.out.println("Saída (sigmoidal) do neuronio " + j + ": " + camadaSaida.neuronios[j].saida + " | saida esperada: " + s[j] + " | entrada (somatório): " + camadaSaida.neuronios[j].entrada + " | erro: " + camadaSaida.neuronios[j].erro);
-//            }
-//            System.out.println("");
-
-
-
-//            verificaResultado();
         }
+
+        //printa o TPR e FPR de cada instância do dataset de teste
+        /*System.out.println("alTPR");
+        for(double i : alTPR){
+            System.out.println(i);
+        }
+
+        System.out.println("alFPR");
+        for(double i : alFPR){
+            System.out.println(i);
+        }*/
     }
 
     private void avaliaResultado(int indiceEsperado){
@@ -271,12 +214,14 @@ public class Algoritmo extends Constantes{
 
         double TPR = 0, FPR = 0;
 
+        //verifica qual neurônio da camada de saída tem valor maior (como estamos lidando com uma codificação Dummy, considerei que o neurônio com valor maior é o que está ativo)
         for(int i = 0;i < N_SAIDA;i++){
             if(camadaSaida.neuronios[i].saida > valorMaior){
                 valorMaior = camadaSaida.neuronios[i].saida;
                 indiceMaior = i;
             }
         }
+        //alimenta matriz de confusão
         matrizConfusao[indiceEsperado][indiceMaior]++;
 
         VNGeral = VPGeral;
@@ -285,9 +230,8 @@ public class Algoritmo extends Constantes{
             VPGeral++;
         } else {
             FNGeral++;
-        } /*else if(indiceEsperado > indiceMaior){
-            FPGeral++;
-        }*/
+        }
+
         //TPR = VP/(VP + FN)
         try {
             TPR = VPGeral / (VPGeral + FNGeral);
@@ -296,6 +240,7 @@ public class Algoritmo extends Constantes{
         } catch (ArithmeticException e){
             System.out.println("Erro na divisão");
         }
+
         //FPR = FP/(VN + FP)
         try {
             FPR = FPGeral / (VNGeral + FPGeral);
@@ -310,6 +255,7 @@ public class Algoritmo extends Constantes{
     }
 
     private void printaMatriz(){
+        System.out.println("## Matriz de confusão ##");
         for(int i = 0;i < N_SAIDA;i++){
             for(int j = 0;j < N_SAIDA;j++){
                 System.out.print(matrizConfusao[i][j] + "  ");
@@ -337,14 +283,8 @@ public class Algoritmo extends Constantes{
                     FNGeral += matrizConfusao[i][j];
 
                     VN += matrizConfusao[j][j];
-                    VNGeral += matrizConfusao[j][j];
                 }
             }
-
-//            acuracia: todas as classes
-            //precisao e racall: cada classe
-            //roc para cada classe
-
 
             //Sensitividade/recall  = VP / (VP + FN)
             sensitividade = VP / (VP + FN);
@@ -352,27 +292,17 @@ public class Algoritmo extends Constantes{
             especificidade = VN / (VN + FP);
             //Precisão = VP / (VP + FN)
             precisao = VP / (VP + FN);
-            //TPR = VP/(VP + FN)
-            TPR = VP / (VP + FN);
-            //FPR = FP/(VN + FP)
-            FPR = FP / (VN + FP);
-
-            //cada instacia terá um TPR e um FPR, e o gráfico plotado terá 36 linhas?
 
             System.out.println("## Classe " + i + " ##");
             System.out.println("Sensitividade/recall: " + sensitividade);
             System.out.println("Especificidade: " + especificidade);
             System.out.println("Precisão: " + precisao);
-            System.out.println("TPR: " + TPR);
-            System.out.println("FPR: " + FPR);
             System.out.println();
         }
-        //Acurácia = (VP+VN)/(VP+FP+VN+FN)
-        //soma da diagonal princiapal / 94
-        acuracia = (VPGeral + VNGeral)/(VPGeral + FPGeral + VNGeral + FNGeral);
-        //pessoal da ap: 71/94=75%
-        //Erro = 1-Acurácia
+
+        acuracia = VPGeral/(dadosTeste.entrada.size()-6);
         erro = 1 - acuracia;
+
         System.out.println("## Resultados gerais ##");
         System.out.println("Acurácia: " + acuracia);
         System.out.println("Erro: " + erro);
