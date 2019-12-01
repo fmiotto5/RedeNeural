@@ -2,7 +2,7 @@ package principal;
 
 public class Constantes {
     public static final double MOMENTUM = 0.9999;
-    public static final double TAXA_APRENDIZAGEM = 0.3;
+    public static final double TAXA_APRENDIZAGEM = 0.2;
 
     public static final int CAMADA_ENTRADA = 1;
     public static final int CAMADA_INTERMEDIARIA = 2;

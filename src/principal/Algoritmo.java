@@ -1,5 +1,8 @@
 package principal;
 
+import javax.naming.directory.AttributeInUseException;
+import javax.xml.crypto.dom.DOMCryptoContext;
+import java.util.ArrayList;
 
 public class Algoritmo extends Constantes{
     private Dados dadosTreino;
@@ -11,12 +14,16 @@ public class Algoritmo extends Constantes{
     private Camada camadaIntermediaria;
     private Camada camadaSaida;
 
+    double VPGeral = 0, VNGeral = 0, FPGeral = 0, FNGeral = 0;
+    ArrayList<Double> alTPR = new ArrayList<>();
+    ArrayList<Double> alFPR = new ArrayList<>();
+
     //saida, tem que obrigatoriamente estar acima de 0.5?
     // se entrar um dado bem fora dos padroes, tem que sair algum neuronio > 0.5?
 
     //como eu coloco a saida esperada de um caractere fora dos padroes?
 
-    public Algoritmo(){
+    public Algoritmo() {
 //        dadosTreino = new Dados("entrada");
         dadosTreino = new Dados("dataset_treino");
         dadosTeste = new Dados("dataset_teste");
@@ -28,7 +35,7 @@ public class Algoritmo extends Constantes{
         executa();
     }
 
-    private void executa(){
+    private void executa() {
         treinaRede();
         testaRede();
         printaMatriz();
@@ -262,6 +269,8 @@ public class Algoritmo extends Constantes{
         int indiceMaior = 0;
         double valorMaior = 0;
 
+        double TPR = 0, FPR = 0;
+
         for(int i = 0;i < N_SAIDA;i++){
             if(camadaSaida.neuronios[i].saida > valorMaior){
                 valorMaior = camadaSaida.neuronios[i].saida;
@@ -269,6 +278,35 @@ public class Algoritmo extends Constantes{
             }
         }
         matrizConfusao[indiceEsperado][indiceMaior]++;
+
+        VNGeral = VPGeral;
+        FPGeral = FNGeral;
+        if(indiceEsperado == indiceMaior){
+            VPGeral++;
+        } else {
+            FNGeral++;
+        } /*else if(indiceEsperado > indiceMaior){
+            FPGeral++;
+        }*/
+        //TPR = VP/(VP + FN)
+        try {
+            TPR = VPGeral / (VPGeral + FNGeral);
+            if (Double.isNaN(TPR))
+                TPR = 0;
+        } catch (ArithmeticException e){
+            System.out.println("Erro na divisão");
+        }
+        //FPR = FP/(VN + FP)
+        try {
+            FPR = FPGeral / (VNGeral + FPGeral);
+            if(Double.isNaN(FPR))
+                FPR = 0;
+        } catch(ArithmeticException e){
+            System.out.println("Erro na divisão");
+        }
+
+        alTPR.add(new Double(TPR));
+        alFPR.add(new Double(FPR));
     }
 
     private void printaMatriz(){
@@ -282,30 +320,33 @@ public class Algoritmo extends Constantes{
 
     private void calculaMetricas(){
         double acuracia, erro, sensitividade, especificidade, precisao, TPR, FPR;
-        int VP = 0, VN = 0, FP = 0, FN = 0;
+        double VP = 0, VN = 0, FP = 0, FN = 0;
+        VPGeral = VNGeral = FPGeral = FNGeral = 0;
 
         System.out.println();
         for(int i = 0;i < N_SAIDA;i++) {
-            for (int j = 0; j < N_SAIDA; j++) {
-                VN = FP = FN = 0;
-                VP = matrizConfusao[j][j];
-                for (int k = 0; k < N_SAIDA; k++) {
-                    if (j != k) {
-                        VN += matrizConfusao[k][k];
-                        FP += matrizConfusao[k][j];
-                        FN += matrizConfusao[j][k];
-                    }
+            VN = FP = FN = 0;
+            VP = matrizConfusao[i][i];
+            VPGeral += matrizConfusao[i][i];
+            for(int j = 0;j < N_SAIDA;j++){
+                if(i != j){
+                    FP += matrizConfusao[j][i];
+                    FPGeral += matrizConfusao[j][i];
+
+                    FN += matrizConfusao[i][j];
+                    FNGeral += matrizConfusao[i][j];
+
+                    VN += matrizConfusao[j][j];
+                    VNGeral += matrizConfusao[j][j];
                 }
             }
+
 //            acuracia: todas as classes
             //precisao e racall: cada classe
             //roc para cada classe
 
-            //Acurácia = (VP+VN)/(VP+FP+VN+FN)
-            acuracia = (VP + VN) / (VP + FP + VN + FN);
-            //Erro = 1-Acurácia
-            erro = 1 - acuracia;
-            //Sensitividade = VP / (VP + FN)
+
+            //Sensitividade/recall  = VP / (VP + FN)
             sensitividade = VP / (VP + FN);
             //Especificidade = VN / (VN + FP)
             especificidade = VN / (VN + FP);
@@ -316,14 +357,24 @@ public class Algoritmo extends Constantes{
             //FPR = FP/(VN + FP)
             FPR = FP / (VN + FP);
 
-            System.out.println("## Instância " + i + " ##");
-            System.out.println("Acurácia: " + acuracia);
-            System.out.println("Erro: " + erro);
-            System.out.println("Sensitividade: " + sensitividade);
+            //cada instacia terá um TPR e um FPR, e o gráfico plotado terá 36 linhas?
+
+            System.out.println("## Classe " + i + " ##");
+            System.out.println("Sensitividade/recall: " + sensitividade);
+            System.out.println("Especificidade: " + especificidade);
             System.out.println("Precisão: " + precisao);
             System.out.println("TPR: " + TPR);
             System.out.println("FPR: " + FPR);
             System.out.println();
         }
+        //Acurácia = (VP+VN)/(VP+FP+VN+FN)
+        //soma da diagonal princiapal / 94
+        acuracia = (VPGeral + VNGeral)/(VPGeral + FPGeral + VNGeral + FNGeral);
+        //pessoal da ap: 71/94=75%
+        //Erro = 1-Acurácia
+        erro = 1 - acuracia;
+        System.out.println("## Resultados gerais ##");
+        System.out.println("Acurácia: " + acuracia);
+        System.out.println("Erro: " + erro);
     }
 }
